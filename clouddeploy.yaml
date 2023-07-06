@@ -1,0 +1,82 @@
+apiVersion: deploy.cloud.google.com/v1
+kind: DeliveryPipeline
+metadata:
+  name: demo-app-auto
+description: main application pipeline
+serialPipeline:
+  stages:
+  - targetId: run-qstest
+    profiles: [test]
+  - targetId: run-qsprod
+    profiles: [prod]
+    strategy:
+      canary:
+        runtimeConfig:
+          cloudRun:
+            automaticTrafficControl: true
+        canaryDeployment:
+          percentages: [25, 50]
+          verify: true
+---
+# apiVersion: deploy.cloud.google.com/v1
+# kind: DeliveryPipeline
+# metadata:
+#   name: demo-app-custom
+# description: main application pipeline
+# serialPipeline:
+#   stages:
+#   - targetId: run-qstest
+#     profiles: [test]
+#   - targetId: run-qsprod
+#     profiles: [prod]
+#     strategy:
+#       canary:
+#         ​customCanaryDeployment:
+#           phaseConfigs:
+#           - phaseId: "phase-33"
+#             percentage: 33
+#             profiles: [ "prod" ]
+#             verify: false
+#           - phaseId: "phase-66"
+#             percentage: 66
+#             profiles: [ "prod" ]
+#             verify: false
+#           - phaseId: "stable"
+#             percentage: 100
+#             profiles: [ "prod" ]
+#             verify: false # true
+# ---
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: run-qstest
+description: Cloud Run test service
+run:
+  location: projects/PROJECT_ID/locations/REGION
+executionConfigs:
+- defaultPool:
+    serviceAccount: "CD_SA@PROJECT_ID.iam.gserviceaccount.com"
+    artifactStorage: "gs://PROJECT_ID-cd-test/source"
+    #executionTimeout: "5000s"
+  usages:
+  - RENDER
+  - DEPLOY
+  - VERIFY
+---
+
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: run-qsprod
+description: Cloud Run production service
+run:
+  location: projects/PROJECT_ID/locations/REGION
+executionConfigs:
+- defaultPool:
+    serviceAccount: "CD_SA@PROJECT_ID.iam.gserviceaccount.com"
+    artifactStorage: "gs://PROJECT_ID-cd-prod/source"
+    #executionTimeout: "5000s"
+  usages:
+  - RENDER
+  - DEPLOY
+  - VERIFY

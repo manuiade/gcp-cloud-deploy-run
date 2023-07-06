@@ -1,0 +1,36 @@
+apiVersion: skaffold/v4beta4
+kind: Config
+metadata:
+  name: demo-app
+build:
+  artifacts:
+    - image: demo-app
+      context: demo-app
+    - image: hello-verify
+      context: hello-verify
+  googleCloudBuild:
+    projectId: PROJECT_ID
+manifests:
+  kustomize:
+    paths:
+      - demo-app/kubernetes/base/*
+profiles:
+- name: test
+  manifests:
+    kustomize:
+      paths:
+        - demo-app/kubernetes/overlays/test
+- name: prod
+  manifests:
+    kustomize:
+      paths:
+        - demo-app/kubernetes/overlays/prod
+  verify:
+    - name: verify-deployment
+      container:
+        name: hello-verify
+        image: hello-verify
+        command: ["/verify.sh"]
+        args: [demo-app-prod, PROJECT_ID, REGION ]
+deploy:
+  cloudrun: {}
